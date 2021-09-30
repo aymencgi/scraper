@@ -1,0 +1,142 @@
+import requests
+import csv
+from bs4 import BeautifulSoup
+
+test = "https://books.toscrape.com/catalogue/category/books/travel_2/index.html"
+url = "https://books.toscrape.com/index.html"
+
+
+def request_parser():
+    request = requests.get(url)
+    if request.ok:
+        return BeautifulSoup(request.content, 'html.parser')
+
+
+def category():
+    category_link_short = []
+    category_link = []
+    for a in request_parser().select('li > a'):
+        category_link.append("https://books.toscrape.com/" + a['href'])
+        category_link_short.append(a['href'])
+    category_link_short.pop(1)
+    category_link.pop(1)
+    category_link_short.pop(0)
+    category_link.pop(0)
+    category_link_short.pop()
+    category_link.pop()
+    return category_link_short, category_link
+
+
+all_link_short_categories, all_link_categories = category()
+
+
+# print(all_link_categories)
+
+
+def pagitation():
+    file = open("test.csv", "w")
+    all_pagitation = []
+    for link in all_link_categories:
+        file.write(link + "\n")
+        for numb in range(2, 10):
+            all_pages = link.replace("index.html", f'page-{numb}.html')
+            request = requests.get(all_pages)
+            if not request.ok:
+                break
+            file.write(all_pages + "\n")
+            all_pagitation.append(all_pages)
+    file.close()
+    return all_pagitation
+
+
+extra_pages = pagitation()
+
+categories_with_pagitation = all_link_categories + extra_pages
+
+
+# print(categories_with_pagitation)
+
+
+def pages():
+    book_links = []
+    for page in categories_with_pagitation:
+        r = requests.get(page)
+        soup = BeautifulSoup(r.content, 'html.parser')
+        for w in soup.select('h3 > a'):
+            x = w['href']
+            u = "https://books.toscrape.com/catalogue/" + x.replace('../', '')
+            book_links.append(u)
+    return book_links
+
+
+
+
+all_books = pages()
+
+
+categories_name = ["Travel", "Mystery","Historical Fiction","Sequential Art","Classics","Philosophy","Romance","Womens Fiction","Fiction","Childrens","Religion","Nonfiction",
+                   "Music","Default","Science Fiction","Sports and Games","Add a comment","Fantasy","New Adult","Young Adult","Science","Poetry","Paranormal","Art","Psychology",
+                   "Autobiography","Parenting","Adult Fiction","Humor","Horror","History","Food and Drink","Christian Fiction","Business","Biography","Thriller","Contemporary",
+                   "Spirituality","Academic","Self Help","Historical","Christian","Suspense","Short Stories","Novels","Health","Politics","Cultural","Erotica","Crime"
+                   ]
+
+
+#pages()
+headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
+           "book_category", "review_rating", "image_url"]
+
+
+def bokkdata():
+    for categories in categories_name:
+        with open(f'{categories}.csv', 'w', encoding='utf-8') as filename:
+            writer = csv.writer(filename)
+            writer.writerow(headers)
+            rows = []
+            for book in pages():
+                row = []
+                request = requests.get(book)
+                soup = BeautifulSoup(request.content, 'html.parser')
+                title = soup.find("h1").text
+                row.append(title)
+
+                # UPC code
+                UPC_code = soup.find_all("td")[0].text
+                row.append(UPC_code)
+
+                # Price including tax
+                price_including_tax = soup.find_all("td")[3].text
+                row.append(price_including_tax)
+
+                # Price excluding tax
+                price_excluding_tax = soup.find_all("td")[2].text
+                row.append(price_excluding_tax)
+
+                # Number available
+                number_available = soup.find_all("td")[5].text
+                row.append(number_available)
+
+                # product Description
+                product_description = soup.find_all("p")[3].text
+                row.append(product_description)
+
+                # Category
+                book_category = soup.select('li > a')
+                row.append(book_category[2].text)
+
+                # Review rating
+                review_rating = soup.find_all("p", class_="star-rating")[0].get("class")[1]
+                if review_rating:
+                    row.append(review_rating)
+                else:
+                    row.append("No star review")
+                # Getting Image URL
+
+                image_url = soup.find('div', class_="item active").img['src']
+                image_url = "http://books.toscrape.com/" + image_url.replace('../', '')
+                row.append(image_url)
+                print("book title", title)
+                rows.append(row)
+                # print("livres")
+            writer.writerows(rows)
+
+bokkdata()
