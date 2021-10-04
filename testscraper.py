@@ -36,11 +36,12 @@ all_link_short_categories, all_link_categories = category()
 
 
 #fonction qui recherche les noms des catégories et les mets dans une liste
+"""
 category_name = []
 for category in request_parser(category).select('li > a'):
     category_name.append(category.text)
 print(category_name)
-
+"""
 
 #fonction qui scan les liens des catégories, fait la pagination et retour tout les liens des livres
 
@@ -66,27 +67,47 @@ def onecategorybooks(categoryUrl):
             x = w['href']
             u = "https://books.toscrape.com/catalogue/" + x.replace('../', '')
             links.append(u)
-        return links
+    #print(links)
 
+    headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
+               "book_category", "review_rating", "image_url"]
+    categories_name = ["Travel", "Mystery", "Historical Fiction", "Sequential Art", "Classics", "Philosophy", "Romance",
+                       "Womens Fiction", "Fiction", "Childrens", "Religion", "Nonfiction",
+                       "Music", "Default", "Science Fiction", "Sports and Games", "Add a comment", "Fantasy",
+                       "New Adult", "Young Adult", "Science", "Poetry", "Paranormal", "Art", "Psychology",
+                       "Autobiography", "Parenting", "Adult Fiction", "Humor", "Horror", "History", "Food and Drink",
+                       "Christian Fiction", "Business", "Biography", "Thriller", "Contemporary",
+                       "Spirituality", "Academic", "Self Help", "Historical", "Christian", "Suspense", "Short Stories",
+                       "Novels", "Health", "Politics", "Cultural", "Erotica", "Crime"
+                       ]
 
-
-
-headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
-           "book_category", "review_rating", "image_url"]
-categories_name = ["Travel", "Mystery","Historical Fiction","Sequential Art","Classics","Philosophy","Romance","Womens Fiction","Fiction","Childrens","Religion","Nonfiction",
-                   "Music","Default","Science Fiction","Sports and Games","Add a comment","Fantasy","New Adult","Young Adult","Science","Poetry","Paranormal","Art","Psychology",
-                   "Autobiography","Parenting","Adult Fiction","Humor","Horror","History","Food and Drink","Christian Fiction","Business","Biography","Thriller","Contemporary",
-                   "Spirituality","Academic","Self Help","Historical","Christian","Suspense","Short Stories","Novels","Health","Politics","Cultural","Erotica","Crime"
-                   ]
-
-#fonction qui crée un fichier pour chaque catégorie et qui enregistre les headers et  toutes les données de toutes les livres sans prendre en compte la catégorie
-
-def bokkdata():
     for categories in categories_name:
-        with open(f'{categories}.csv', 'w', encoding='utf-8') as filename:
-            writer = csv.writer(filename)
+        with open(f'{categories}.csv', 'w', encoding='utf-8') as file:
+            writer = csv.writer(file)
             writer.writerow(headers)
-            rows = []
+            writer.writerow(links)
+            file.close()
+
+
+for category in all_link_categories:
+    onecategorybooks(category)
+
+#fonction qui recherche les noms des catégories et les mets dans une liste
+category_name = []
+for category in request_parser(category).select('li > a')[2:10]:
+    category_name.append(category.text)
+
+print(category_name)
+
+
+
+
+
+
+"""
+#fonction qui crée un fichier pour chaque catégorie et qui enregistre les headers et  toutes les données de toutes les livres sans prendre en compte la catégorie
+def bokkdata():
+
             for link in all_link_categories:
                 row = []
                 request = requests.get(link)
@@ -133,3 +154,4 @@ def bokkdata():
                 rows.append(row)
                 # print("livres")
             writer.writerows(rows)
+            """
