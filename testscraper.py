@@ -35,13 +35,6 @@ all_link_short_categories, all_link_categories = category()
 #print(all_link_categories)
 
 
-#fonction qui recherche les noms des catégories et les mets dans une liste
-"""
-category_name = []
-for category in request_parser(category).select('li > a'):
-    category_name.append(category.text)
-print(category_name)
-"""
 
 #fonction qui scan les liens des catégories, fait la pagination et retour tout les liens des livres
 
@@ -67,7 +60,8 @@ def onecategorybooks(categoryUrl):
             x = w['href']
             u = "https://books.toscrape.com/catalogue/" + x.replace('../', '')
             links.append(u)
-    #print(links)
+    print(links)
+
 
     headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
                "book_category", "review_rating", "image_url"]
@@ -81,23 +75,23 @@ def onecategorybooks(categoryUrl):
                        "Novels", "Health", "Politics", "Cultural", "Erotica", "Crime"
                        ]
 
+
     for categories in categories_name:
         with open(f'{categories}.csv', 'w', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(headers)
             writer.writerow(links)
-            file.close()
+            writer.writerow(headers)
+
+    file.close()
+
+
 
 
 for category in all_link_categories:
     onecategorybooks(category)
 
 #fonction qui recherche les noms des catégories et les mets dans une liste
-category_name = []
-for category in request_parser(category).select('li > a')[2:10]:
-    category_name.append(category.text)
 
-print(category_name)
 
 
 
