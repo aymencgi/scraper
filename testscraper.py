@@ -1,18 +1,33 @@
 import requests
 import csv
 from bs4 import BeautifulSoup
+import os
 
-#fonction qui request l'URL de base
+
+# fonction qui request l'URL de base
 
 def request_parser(url):
-    url = "https://books.toscrape.com/index.html"
+    #url = "https://books.toscrape.com/index.html"
     request = requests.get(url)
     if request.ok:
         return BeautifulSoup(request.content, 'html.parser')
 
 
+headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
+               "book_category", "review_rating", "image_url"]
+categories_name = ["Travel", "Mystery", "Historical Fiction", "Sequential Art", "Classics", "Philosophy", "Romance",
+                       "Womens Fiction", "Fiction", "Childrens", "Religion", "Nonfiction",
+                       "Music", "Default", "Science Fiction", "Sports and Games", "Add a comment", "Fantasy",
+                       "New Adult", "Young Adult", "Science", "Poetry", "Paranormal", "Art", "Psychology",
+                       "Autobiography", "Parenting", "Adult Fiction", "Humor", "Horror", "History", "Food and Drink",
+                       "Christian Fiction", "Business", "Biography", "Thriller", "Contemporary",
+                       "Spirituality", "Academic", "Self Help", "Historical", "Christian", "Suspense", "Short Stories",
+                       "Novels", "Health", "Politics", "Cultural", "Erotica", "Crime"
+                       ]
 
-#fonction qui renvoie les liens des catégories
+
+
+# fonction qui renvoie les liens des catégories
 def category():
     url = "https://books.toscrape.com/index.html"
     category_link_short = []
@@ -29,14 +44,14 @@ def category():
     return category_link_short, category_link
 
 
-
 all_link_short_categories, all_link_categories = category()
 
-#print(all_link_categories)
+# print(all_link_categories)
 
 
+# fonction qui scan les liens des catégories, fait la pagination et retour tout les liens des livres
 
-#fonction qui scan les liens des catégories, fait la pagination et retour tout les liens des livres
+
 
 def onecategorybooks(categoryUrl):
     books_of_category = []
@@ -60,92 +75,67 @@ def onecategorybooks(categoryUrl):
             x = w['href']
             u = "https://books.toscrape.com/catalogue/" + x.replace('../', '')
             links.append(u)
-    print(links)
+    return links
+
+pages = []
+
+#print(pages[0][0])
+
+def get_book_bycategory():
+    for category in all_link_categories:
+        pages.append(onecategorybooks(category))
+    for category in categories_name:
+        if not os.path.exists("category"):
+            os.makedirs(category)
 
 
-    headers = ["Title", "UPC", "Price including tax", "Price excluding tax", "Avaibility", "product Description", "Tax",
-               "book_category", "review_rating", "image_url"]
-    categories_name = ["Travel", "Mystery", "Historical Fiction", "Sequential Art", "Classics", "Philosophy", "Romance",
-                       "Womens Fiction", "Fiction", "Childrens", "Religion", "Nonfiction",
-                       "Music", "Default", "Science Fiction", "Sports and Games", "Add a comment", "Fantasy",
-                       "New Adult", "Young Adult", "Science", "Poetry", "Paranormal", "Art", "Psychology",
-                       "Autobiography", "Parenting", "Adult Fiction", "Humor", "Horror", "History", "Food and Drink",
-                       "Christian Fiction", "Business", "Biography", "Thriller", "Contemporary",
-                       "Spirituality", "Academic", "Self Help", "Historical", "Christian", "Suspense", "Short Stories",
-                       "Novels", "Health", "Politics", "Cultural", "Erotica", "Crime"
-                       ]
-
-
-    for categories in categories_name:
-        with open(f'{categories}.csv', 'w', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(links)
+    for index, row in enumerate(pages):
+        path = os.getcwd()
+        with open(os.path.join(path, "{}.csv".format(categories_name[index]), "w", newline="") as f:
+        #with open("{}.csv".format(categories_name[index]), "w", newline="") as f:
+            writer = csv.writer(f)
             writer.writerow(headers)
-
-    file.close()
-
-
-
-
-for category in all_link_categories:
-    onecategorybooks(category)
-
-#fonction qui recherche les noms des catégories et les mets dans une liste
-
-
-
-
-
-
-
-"""
-#fonction qui crée un fichier pour chaque catégorie et qui enregistre les headers et  toutes les données de toutes les livres sans prendre en compte la catégorie
-def bokkdata():
-
-            for link in all_link_categories:
-                row = []
-                request = requests.get(link)
-                soup = BeautifulSoup(request.content, 'html.parser')
-                title = soup.find("h1").text
-                row.append(title)
-
-                # UPC code
-                UPC_code = soup.find_all("td")[0].text
-                row.append(UPC_code)
-
-                # Price including tax
-                price_including_tax = soup.find_all("td")[3].text
-                row.append(price_including_tax)
-
-                # Price excluding tax
-                price_excluding_tax = soup.find_all("td")[2].text
-                row.append(price_excluding_tax)
-
-                # Number available
-                number_available = soup.find_all("td")[5].text
-                row.append(number_available)
-
-                # product Description
-                product_description = soup.find_all("p")[3].text
-                row.append(product_description)
-
-                # Category
-                book_category = soup.select('li > a')
-                row.append(book_category[2].text)
-
-                # Review rating
-                review_rating = soup.find_all("p", class_="star-rating")[0].get("class")[1]
+            rows = []
+            for link in pages[index]:
+                page_soup = request_parser(link)
+                #print(page_soup)
+                bookshelf = page_soup.find_all("td")
+                title = page_soup.find("h1").text
+                new_list = [x.text for x in bookshelf]
+                new_list.insert(0, title)
+                review_rating = page_soup.find_all("p", class_="star-rating")[0].get("class")[1]
                 if review_rating:
-                    row.append(review_rating)
+                    new_list.append(review_rating)
                 else:
-                    row.append("No star review")
-                # Getting Image URL
+                    new_list.append("No star review")
 
-                image_url = soup.find('div', class_="item active").img['src']
+                image_url = page_soup.find('div', class_="item active").img['src']
                 image_url = "http://books.toscrape.com/" + image_url.replace('../', '')
-                row.append(image_url)
-                print("book title", title)
-                rows.append(row)
-                # print("livres")
+                new_list.append(image_url)
+                rows.append(new_list)
             writer.writerows(rows)
-            """
+
+get_book_bycategory()
+
+
+def get_images():
+    all_title = []
+    all_images = []
+    for index, row in enumerate(pages):
+        for link in pages[index]:
+            page_soup = request_parser(link)
+            title = page_soup.find("h1").text
+            image_url = page_soup.find('div', class_="item active").img['src']
+            image_url = "http://books.toscrape.com/" + image_url.replace('../', '')
+            all_images.append(image_url)
+            all_title.append(title)
+            os.mkdir(os.path.join(os.getcwd(),images))
+            with open(os.path.join(f'{title}.jpg'),'ab') as file:
+                for image in all_images:
+                    r = requests.get(image).content
+                file.write(r)
+
+
+get_images()
+
+
